@@ -16,7 +16,7 @@ class Node(object):
         self.step = int(np.floor(self.sm_time / self.dt))
 
     def theta_der(self, theta, alpha, I):
-        return ( 1 - np.cos(theta) + alpha * I * (1 + np.cos(theta)))
+        return self.dt*( 1 - np.cos(theta) + alpha * I * (1 + np.cos(theta)))
 
     def model(self,  w, t_input_dirac):
         assert(len(w) == len(t_input_dirac))
@@ -30,7 +30,7 @@ class Node(object):
             if t in t_input_dirac:    # The first time cross the t_input_dirac
                 id_ = np.where(t_input_dirac == t)[0][0]
                 if id_ != len(t_input_dirac):
-                    self.I += w[id_]  # Synaptic currents as Diracs
+                    self.I += 1/self.dt*w[id_]  # Synaptic currents as Diracs
             delta_theta = self.theta_der(self.theta, self.alpha, self.I)
             theta_new = self.theta + delta_theta
             #print theta_new
@@ -81,9 +81,9 @@ class PCA(object):
         self.dt = 0.05
         self.sm_time = 20
         self.tao = 0.1
-        self.C = 50
-        self.lambda_ = 0.001
-        self.mu = 0.00001
+        self.C = 1000
+        self.lambda_ = 0 #0.000001*0.1
+        self.mu = 0.01 #0.000001*0.1
         self.wrange = [0.5, 1.5]
         self.step = self.sm_time / self.dt
         self.net = net
@@ -97,14 +97,12 @@ class PCA(object):
         half_nlayer = self.net.nlayer / 2
         t_input_dirac =  np.floor(_input / self.dt)
         last_in = t_input_dirac
-        p_node = len(last_in)
         last_thetas = [];
         for layer in xrange(self.net.nlayer):
             n_node = len(self.net.layers[layer])
             if layer < half_nlayer:
                 cur_w = w[layer]
                 t_all, thetas =  self.net.stimulate(last_in, cur_w, layer)
-                last_in = t_all
 
             if layer >= half_nlayer:
                 w[layer] =  np.transpose( w[2* half_nlayer - layer - 1] ) 
@@ -112,7 +110,6 @@ class PCA(object):
                 t_all, thetas =  self.net.stimulate(last_in, cur_w, layer)
             if layer != self.net.nlayer - 1:
                 last_in = t_all
-                p_node = n_node
                 last_thetas = thetas
         return t_all, thetas, last_thetas, last_in
 
@@ -136,7 +133,10 @@ class PCA(object):
         for i in xrange(self.net.nlayer):
             if i < half_nlayer:
                 m = len(self.net.layers[i])
-                self.w.append(np.random.rand(n,m) * (wrange[1] - wrange[0]) + wrange[0])
+                #self.w.append(np.random.rand(n,m) * (wrange[1] - wrange[0]) + wrange[0])
+                #self.w.append(np.array([[ 1.43237788,2.99588509], [ 0.81954857,3.04929579],[ 0.88254488,3.05563769]]))
+                #self.w.append(np.array([[ 1.10075154,3.34409603],[ 0.47409087,3.39723133],[ 0.537345, 3.40360319]]))
+                self.w.append(np.array([[ 1.38964519,3.21326752],[ 0.85084747,3.24406681],[ 0.85547578,3.24433349]]))
                 n = m
             else:
                 self.w.append(np.transpose(self.w[2*half_nlayer - i - 1]))
@@ -145,19 +145,35 @@ class PCA(object):
         delta = np.zeros((c_node, p_node))
         eps = 0.000001
         sum_error = 1
-        max_iter = 100
+        max_iter = 200
         it = 0
-        train_rate = 0.8
+        train_rate = 0.9
         last_w = np.copy( self.w[0] )
-        w0 = np.zeros((int(max_iter*self.nsample*train_rate), p_node* c_node))
+        #w0 = np.zeros((int(max_iter*self.nsample*train_rate), p_node* c_node))
+        w0 = np.zeros((int(max_iter), p_node* c_node))
+        convergence_count = 0
+        E_all = np.zeros((int(max_iter),1))
         while it < max_iter and sum_error > eps:
             E_total = 0
+            if it == 0:
+                print self.trainX[0]
             train_set, val_set = self.shuffle_data(train_rate)
             [train_nsample, _] = np.shape(train_set)
+            w_tmp = np.zeros((c_node, p_node)) 
+            w0[it] = self.w[0].flatten()
+            count = 0
+            print convergence_count
+            if convergence_count > 100:
+                print '######################decay###################'
+                self.mu = 0.1*self.mu
+                self.lambda_ = 0.1* self.lambda_
+                convergence_count = 0
+                self.w0 = w0[it - 5].reshape((3,2))
+                it = it - 5
+                continue
             for i in xrange(train_nsample):
-                w0[it*train_nsample + i] = self.w[0].flatten()
+                #w0[it*train_nsample + i] = self.w[0].flatten()
                 t, thetas, last_thetas, res = self.forward(train_set[i], self.w)
-                # print t*self.dt
                 # update last layer of weight
                 for j in xrange(p_node):
                     for k in xrange(c_node):
@@ -170,39 +186,57 @@ class PCA(object):
                             delta[k][j] = 0
                 #print delta
                 phi = np.zeros(c_node)
-                w_tmp = np.transpose(self.w[0])
-                #pdb.set_trace()
                 for k in xrange(c_node): 
-                    #phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
+                    phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
                     for j in xrange(p_node):
                         if delta[k][j] < 0 and delta[k][j] > - self.C:
                             w_tmp[k][j] += -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j] - self.lambda_ * phi[k]
+                            #print self.lambda_ * phi[k],-2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j]
                         else:
+                            count += 1
                             w_tmp[k][j] += 2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * self.C - self.lambda_ * phi[k]
-                pdb.set_trace()
-                self.w[0] = np.transpose(w_tmp)
-                self.w[self.net.nlayer - 1] = w_tmp
+                #self.w[0] = np.transpose(w_tmp)
+                #self.w[self.net.nlayer - 1] = w_tmp
                 E= np.sum((t* self.dt - train_set[i]  - np.ones((self.in_, 1))*ISI)**2)
                 #print 'sample #%d, Error %f'%(i, E)
                 E_total += E
-                sum_error = sum(sum(abs(self.w[0] - last_w)))
-                last_w = np.copy(self.w[0])
+            print count
+            plt.figure('Theta')
+            plt.plot(thetas[0])
+            plt.draw()
+            plt.show(block=False)
+            plt.pause(1)
+# 
+            print train_set[train_nsample - 1]
+            print t
+            last_w = np.copy(self.w[0])
+            self.w[0] += 1/train_nsample*np.transpose(w_tmp)
+            self.w[self.net.nlayer - 1] += w_tmp
+            sum_error = sum(sum(abs(self.w[0] - last_w)))
             gt, pred = self.predict(val_set)
             plot_pca(gt, pred)
             w1 = np.transpose(w0)
             plt.figure('weight')
             for i in xrange(p_node* c_node):
-                plt.plot(xrange( (it+1)*train_nsample ), w1[i][:(it+1)*train_nsample])
+                #plt.plot(xrange( (it+1)*train_nsample ), w1[i][:(it+1)*train_nsample])
+                plt.plot(xrange( (it+1) ), w1[i][:(it+1)])
             plt.draw()
             plt.show(block=False)
             plt.pause(0.001)
-            print 'Round #%d, Error %f'%(it, E_total)        
+            print 'Round #%d, step: %f, Error %f'%(it,self.mu, E_total)        
+            print self.w[0]
+            E_all[it] = E_total
+            plt.figure('Error')
+            plt.plot(xrange( (it+1) ), E_all[:(it+1)])
+            plt.draw()
+            plt.show(block=False)
+            plt.pause(0.001)
+            plt.clf()
+            if it != 0 and E_all[it - 1]  < E_total:
+                convergence_count += 1
+            else:
+                convergence_count = 0
             it += 1
-        w0 = np.transpose(w0)
-        for i in xrange(p_node* c_node):
-            plt.plot(xrange(it ), w0[i][:it])
-
-        plt.show()
 
 
     def predict(self, samples):
@@ -237,6 +271,8 @@ def generate_samples(N):
     return N samples of 3-D in shape (N, 3)
     '''
     samples = np.random.randn(2,N)
+    #samples = np.ones((2,N))
+
     t0 = 3*np.ones((1,N))
     t1 = t0+ np.cos(np.pi/3)*samples[0] + 0.5* np.sin(np.pi/3)* samples[1]
     t2 = t0+ np.cos(np.pi/3)*samples[1]*0.5 +  np.sin(np.pi/3)* samples[0]
@@ -258,5 +294,9 @@ if __name__ == '__main__':
 
     pca = PCA(net, samples)
     pca.learn(ISI)
+    #w0 =  [[-0.65226165379659284, 2.3892026484443698, 3.2964837590526859], [3.9360338198366169, 0.68320719582864187, -0.20506202274993959]]
+    #pca.w = [ np.transpose(w0), w0]
+    #print pca.w
     gt, pred = pca.predict(samples)
     plot_pca(gt, pred)
+    pdb.set_trace()
