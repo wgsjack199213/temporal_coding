@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 def get_input():
     data = []
-    #with open('2D_gaussian_dist.txt') as fin:
-    with open('uniform.txt') as fin:
+    with open('2D_gaussian_dist.txt') as fin:
+    #with open('uniform.txt') as fin:
     #with open('2D_gaussian_dist_shrink.txt') as fin:
     #with open('2D_gaussian_dist_positive.txt') as fin:
     #with open("2D_gaussian_dist_small_var_positive.txt") as fin:
@@ -30,9 +30,9 @@ def theta_der(theta, alpha, I):
     return 1.0 - np.cos(theta) + alpha * I * (1.0 + np.cos(theta))
 
 def update_theta(thetas, I_i, w, I_0, alpha, timestep):
-    I = np.dot(I_i, w) + I_0
+    I = 25.0 * np.dot(I_i, w) + I_0     # XXX The amplitude of the input current
     delta_thetas = theta_der(thetas, alpha, I)
-    new_thetas = thetas + delta_thetas # * timestep
+    new_thetas = thetas + delta_thetas * timestep   # XXX
 
     firing = ((thetas < np.pi) & (new_thetas >= np.pi)).astype(int)
     #print 'new_thetas:', new_thetas
@@ -54,6 +54,9 @@ def delta_weight(alpha, cos_theta_minus, cos_theta_plus, I_0, eta, C, ft_actual,
 def plot_w_update(w_history):
     for x in range(6):
         plt.plot(w_history[x])
+    plt.xlabel('Number of Iterations', fontsize=14)
+    plt.ylabel('Values of $w$s', fontsize=14)
+    plt.savefig('weight_evolution.png')
     plt.show()
     #print w_history
 
@@ -66,46 +69,44 @@ def pca():
     alpha_Y = alpha_X * 1.0 * m / n
     timestep = 0.05   # ms
     num_iter_trial = 401
-    ISI = 0.5   # ms
+    ISI = 5   # ms
     C = 1000
-    eta = 0.00001
-    lamuda = 10.0 * eta
+    eta = 0.0005
+    lamuda = 1.0 * eta * 0
     num_iter_learning = 20000
 
 
     # Topology
     w = np.random.uniform(0.5, 1.5, (2, 3)) # Initialize the weight matrix
-    #w = np.array([[0.69986636, 0.26886332, 0.04155199], [-0.06064578, 0.3710673, 0.60037819]])
-    #w = np.array([[ 0.63182949, -0.08249607,  0.63205652], [ 0.08574707,  0.72654316,  0.08158783]])
-
-    #w = np.array([[-1.50879568,  0.44550418,  1.90464732], [ 2.69228429,  0.5133216,  -1.24438609]])#x1
-    #w = np.array([[-2.82295985,  0.43981246,  3.32091401], [ 5.35372586 , 0.53064058, -2.65269579]]) #x2
-    #w = np.array([[-3.59960994,  0.40231348 , 4.2435657 ], [ 6.89327113,  0.53724807, -3.60413348]]) #x3
-
-    #w = np.array([[ 1.37049837, -0.4799603,  -1.04055838], [-2.03708624,  0.67384842,  0.68324663]])# positive1
-    #w = np.array([[1.34733182, -0.46383421, -1.36568038], [-4.19716343,  0.69846158,  0.70854153]])#positive2
-
-    #w = np.array([[-0.06104861,  0.65189425,  0.64795393], [ 0.80379834, -0.03142514,  0.03048122]]) # positive_new 1
-    #w = np.array([[-0.06109321,  0.65298658,  0.6339056 ], [ 0.80375245, -0.02127992,  0.01800156]])# positive_new 2
-    #w = np.array([[-0.06184917,  0.64656136,  0.6323295 ], [ 0.80323337, -0.01515438,  0.02725966]]) # positive_new 3
 
     #w = np.array([[-0.647, 2.41, 3.294], [3.94, 1.07, 0.053]]) # paper
+    #w = np.array([[-0.6, 2, 3], [3, 1.0, 0.0]]) # paper w + noise
 
-    #w = np.array([[-0.65153531890373018, 2.3871210136956238, 3.2949539562446173], [3.9381781637219668, 0.69381154703036074, -0.14940643314926633]])
-    #w = np.array([[-0.65226165379659284, 2.3892026484443698, 3.2964837590526859], [3.9360338198366169, 0.68320719582864187, -0.20506202274993959]]) # Final
+    #w = np.array([[-0.63802349174938167, 2.4523969927136875, 3.3442600199684529], [3.9371855848428123, 1.1621748973987442, 0.0099998921875246762]])  # start from paper w, Transient current dirac fucntion = 25.0
 
-    #3/8 pi
-    #w = np.array([[2.1652134673146062, 2.167390038392893, 2.0798503575640668], [1.2639322851552297, 0.058276076049662937, 0.87921623515580105]])
-    
-    #test
-    #w = np.array([[-0.47510387138909832, 2.5219989675378485, 3.433469556605937], [3.7954872100973676, 0.51916490608819388, -0.58669136953534251]])
+    #w = np.array( [[-0.34014524085091696, 2.4984120043146971, 3.3826309273837993], [3.9604700734489273, 1.0451106102281138, -0.27651269887877949]]  )  # start from paper w + noise
 
-    # linear
-    w = np.array([[1.4053885118930365, 1.2666870092287592, 0.72938860548410267], [1.5549516373945689, 1.6333115795030138, 1.9350923932911437]])
+    #w = np.array( [[1.3393724648195791, 1.1078659141549303, 1.2910507614431805], [2.4882029488392532, 2.5584422674500242, 2.5292646270325059]])
+    #w = np.array([[3.7500113682604646, -0.027695515392296293, -0.82365578626699421], [2.393367577016023, 2.6830377946894912, 2.7787575984740487]])
+    #w = np.array([[3.7569613329593552, 0.057528364648807562, -0.69249128753537026], [1.8533979967612757, 2.8173749415724663, 3.0945438586595642]])
 
+
+    # Local minimum
+    w = np.array([[1.0495854584232804, 1.0278752838593483, 1.2963497108427307], [2.5814114885299038, 2.5942425259423234, 2.5684321081005832]])
+    w = np.array([[3.7675472479198109, 0.02960945788428803, -0.85644914652842097], [2.3504787468350066, 2.677358590481218, 2.8518639597855548]])    #stable
+    w = np.array([[3.7654484344702723, -0.061728412044310496, -0.75222654640069864], [2.3534712976610068, 2.7112629477736196, 2.7732706677102237]])
+
+    w = np.array([[3.8760013994978411, -0.079921516855307295, -0.81076340314914874], [2.2839364371198831, 2.6603809828672071, 2.9383202738616667]])
+
+    w = np.array([[4.1135971432729743, -0.12442774816536092, -0.5947342610954659], [1.4644912255890914, 2.8283849942492241, 3.0526581921437086]])
+
+    w = np.array([[4.0845921487407502, 0.80071088244585054, -0.12623240092991136], [-0.49143363947168128, 2.6967656403979992, 3.2797358555207903]])
+
+    w = np.array([[4.0823062445548794, 0.92894373957735532, -0.23957641578299593], [-0.50585379597958069, 2.6067705591068342, 3.3720953488872292]])
+
+    w = np.array([[4.0789826198195707, 0.96472554539292421, -0.26692934134239449], [-0.48440624169023211, 2.5901997927923603, 3.3860248359864666]])
 
     # add timetemp
-
     w_history = [[] for k in range(6)]
 
     plot = True
@@ -119,9 +120,21 @@ def pca():
     input_data = get_input()
     print "Input size:", np.shape(input_data)
 
+    # See the evolution of total MSE
+    total_error = [[], [], []]
+    batch_error = []
     for learn in range(num_iter_learning + 1):
-        if learn == len(input_data):
+        
+        if learn % len(input_data) == 0:
             input_data = np.random.permutation(input_data)
+            if learn > 0:
+                for i in range(3):
+                    temp = np.mean(batch_error, axis=1)
+                    total_error[i].append(temp[i])
+                batch_error = []
+                #print "temp:", temp
+                #print 'total_error:', total_error
+                
 
         if learn % 1 == 0:
             log = True
@@ -137,16 +150,28 @@ def pca():
             temp = w[:].reshape(6, 1)
             for x in range(len(temp)):
                 w_history[x].append(temp[x][0])
-            if learn % 2500 == 0 and learn > 0:
+            if learn % 2000 == 0 and learn > 0:
                 plot_w_update(w_history)
+                for i in range(3):
+                    plt.plot(total_error[i], ls='--', label='MSE of $t_' + str(i) + '$')
+                plt.plot(np.sum(total_error, axis=0), label='Total MSE')
+                plt.xlabel('Number of Batches', fontsize=14)
+                plt.ylabel('MSE', fontsize=14)
+                #plt.plot(total_error[0] + total_error[1] + total_error[2], label='Total error')
+                #plt.ylim(0, 1.0)
+                plt.legend()
+                plt.savefig('mse.png')
+                plt.show()
 
         X_ft = input_data[learn % len(input_data)]
-        #X_ft = input_data[2]
 
-        # Round the input_data # FIXME
-        #for k in range(len(X_ft)):
-        #    X_ft[k] = int(X_ft[k] / timestep) * 1.0 * timestep
-
+        # XXX Change the w
+        '''
+        if X_ft[1] < 3 and X_ft[2] < 3:
+            eta = 0.06
+        else:
+            eta = 0.001
+        '''
 
         if log:
             print 'input:', X_ft,
@@ -159,7 +184,7 @@ def pca():
         cos_theta_plus = [[None for k in range(2)] for i in range(3)]
 
         #print 'Current_weight:', w
-        Y_firing_time = np.array([20.0, 20.0])
+        Y_firing_time = np.array([num_iter_trial * timestep, num_iter_trial * timestep])
 
         display = False
         # Begin simulation
@@ -226,6 +251,9 @@ def pca():
             if np.max(X_ft_actual) > 18:
                 print '##########################'
                 #temp = raw_input()
+
+        temp = (X_ft_desired - X_ft_actual) * (X_ft_desired - X_ft_actual)
+        batch_error.append(temp)
         
         #break
 
@@ -242,14 +270,15 @@ def pca():
 
     if predict:
         #print 'Congratulations! Training completion!'
-        plt.scatter(pred_X, pred_Y, alpha=0.3, color='r', label='Prediction')
+        print 'Total error:', total_error
+        plt.scatter(pred_X, pred_Y, alpha=0.3, color='r', label='Reconstruction')
         plt.scatter(actual_X, actual_Y, alpha=0.3, label='Actual')
-        plt.legend()
+        plt.legend(loc='upper left')
         plt.xlim(-2, 2)
         plt.ylim(-2, 2)
-        plt.savefig('centering.png')
+        #plt.savefig('centering.png')
         plt.show()
-    
+
 
 
 if __name__ == '__main__':

@@ -46,5 +46,5 @@ def l():
             fout.write(str(offset) + ' ' + str(offset+point[0]) + ' ' + str(offset+point[1]) + '\n')
 
 if __name__ == '__main__':
-    l()
+    #g()
 
