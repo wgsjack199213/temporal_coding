@@ -1,0 +1,87 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{diagbox}
+\usepackage{subfigure}
+
+% Include other packages here, before hyperref.
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+%\usepackage[breaklinks=true,bookmarks=false]{hyperref}
+\usepackage[colorlinks, linkcolor=red, anchorcolor=blue, citecolor=green]{hyperref}
+
+\cvprfinalcopy % *** Uncomment this line for the final submission
+
+\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+%\ifcvprfinal\pagestyle{empty}\fi
+\setcounter{page}{1}
+\begin{document}
+
+%%%%%%%%% TITLE
+\title{Temporal Coding using the Response Properties of Spiking Neurons}
+
+\author{
+% For a paper whose authors are all at the same institution,
+% omit the following lines up until the closing ``}''.
+% Additional authors and addresses can be added with ``\and'',
+% just like the second author.
+% To save space, use either the email address or home page, not both
+Guosai Wang\\
+ID: 2014311423\\
+{\tt\small wgsjack199213@yeah.net}
+\and
+Han Shen\\
+ID: 2015211649\\
+{\tt\small thushenhan@gmail.com}
+}
+
+
+\maketitle
+%\thispagestyle{empty}
+
+%%%%%%%%% ABSTRACT
+\begin{abstract}
+In biological neurons, the timing of a spike depends on the timing of synaptic currents,
+in a way that is classically described by the Phase Response Curve. 
+This has implications for temporal coding: an action potential that arrives on a synapse has an implicit meaning, 
+that depends on the position of the postsynaptic neuron on the firing cycle. 
+Previous researchers have shown that this implicit code can be used to perform computations. 
+Using theta neurons, they derive a spike-timing dependent learning rule from an error criterion. 
+They demonstrate how to train an auto-encoder neural network using this rule.
+In this work we review their research, redo the simulations and experiments, compare the results with the
+original work, and discuss the strength and weakness of the work in detail.
+\end{abstract}
+
+%%%%%%%%% BODY TEXT
+\section{Introduction}
+
+
+
+
+\input{model}
+
+\input{exp}
+
+\input{discuss}
+
+\input{error}
+
+
+
+{\small
+\bibliographystyle{ieee}
+\bibliography{ref}
+}
+
+\end{document}

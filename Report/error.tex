@@ -1,0 +1,49 @@
+\section{Errors in the Paper}
+
+In this section we list some suspected errors in the paper.
+
+\paragraph{Error 1.}
+In Equation (6) of page 3 of the paper, the potential after the synaptic current are computed as
+\begin{equation}
+	\theta_j^+ = \theta(t_j^+) = \theta_j^- + \alpha w_j (1+\cos \theta_j^-)
+\end{equation}
+Firstly, we think it should be 
+\begin{equation}
+	\theta_j^+ = \theta(t_j^+) = \theta_j^- + (1-\cos \theta_j^-) + \alpha w_j (1+\cos \theta_j^-)
+\end{equation}
+We see no reason whey the term $ 1-\cos \theta_j^-$ is removed.
+Secondly, this equation is very misleading because it does not explicitly show the length of timestep $dt$,
+or it just takes $1.0$ for the timestep.
+Precisely, we should use the following formula to update $\theta$:
+\begin{align}
+	\theta_j^+ &= \theta(t_j^+) \\
+	&= \theta_j^- + d\theta \\
+	&= \theta_j^- + \frac{d\theta}{dt} dt\\
+	&= \theta_j^- + ((1-\cos \theta_j^-) + \alpha w_j (1+\cos \theta_j^-))dt
+\end{align}
+where $dt$ is not necessarily $1.0$, which is very import for the implementation.
+
+
+\paragraph{Error 2.} 
+In Equation (11) of page 4 of the paper, one condition brach is
+\begin{equation}
+	\textrm{if } 0 < -\frac{\partial t_s}{\partial w_i} < C,
+	\textrm{ then: } \Delta w_i = -2\eta(t_s - \bar{t_s}) \frac{\partial t_s}{\partial w_i}
+\end{equation}
+We think the condition should be $\textrm{if } 0 \leq -\frac{\partial t_s}{\partial w_i} < C$.
+Intuitively, if we have reached the global optimal point, where $\frac{\partial t_s}{\partial w_i} = 0$ for all $w_i$s,
+we should be happy with the current weight matrix
+instead of adding a large bias ($\eta(t_s - \bar{t_s}) C$) to the weights $w_i$s.
+The first ``$<$'' in the condition makes the gradient descent algorithm unstable near the optimal points.
+
+\paragraph{Error 3.} 
+In the second paragraph of Section 3 of the paper, the author wrote:
+``The learning rule updates the feedback connections $(w_{ij})_{i\leq n,j\leq m}$ from $Y$ to $X$...''
+Obviously there is a typo. It should be ``from $Y$ to $X'$'' instead of ``from $Y$ to $X$''.
+
+\paragraph{Error 4.}
+There is a small typo in the last paragraph of Section 2.3. 
+It should be ``to the case $\theta_i^+ \in [\theta_0^-, \theta_0^+]$'' instead of 
+``to the case $\theta_i^+ \in [\theta_0^-\theta_0^+[$''.
+
+

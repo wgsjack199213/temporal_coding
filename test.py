@@ -121,7 +121,9 @@ def test_response():
         X, Y, label = pcr(I_0, theta_0, w * 1000, alpha, timestep)
         plt.plot(X, Y, label='w='+label)
     plt.legend()
-    #plt.savefig('Response properties of the theta model (I_0>0).png')
+    plt.xlabel('t (ms)', fontsize=14)
+    plt.ylabel(r"$\Delta t_f$ (ms)", fontsize=14)
+    plt.savefig('Response properties of the theta model (I_0>0).png')
     plt.show()
 
     
@@ -133,7 +135,9 @@ def test_response():
         plt.plot(X, Y, label='w='+label)
     plt.legend()
     plt.ylim(-50, 50)
-    #plt.savefig('Response properties of the theta model (I_0<0).png')
+    plt.xlabel('t (ms)', fontsize=14)
+    plt.ylabel(r'$\Delta t_f$ (ms)', fontsize=14)
+    plt.savefig('Response properties of the theta model (I_0<0).png')
     plt.show()
 
 
