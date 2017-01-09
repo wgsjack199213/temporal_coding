@@ -1,6 +1,8 @@
 import numpy as np
 import pdb
 import matplotlib.pyplot as plt
+import pickle
+import sys
 
 
 class Node(object):
@@ -30,7 +32,7 @@ class Node(object):
             if t in t_input_dirac:    # The first time cross the t_input_dirac
                 id_ = np.where(t_input_dirac == t)[0][0]
                 if id_ != len(t_input_dirac):
-                    self.I += 1/self.dt*w[id_]  # Synaptic currents as Diracs
+                    self.I += 25*w[id_]  # Synaptic currents as Diracs
             delta_theta = self.theta_der(self.theta, self.alpha, self.I)
             theta_new = self.theta + delta_theta
             #print theta_new
@@ -82,8 +84,10 @@ class PCA(object):
         self.sm_time = 20
         self.tao = 0.1
         self.C = 1000
-        self.lambda_ = 0.0000001*0.1
-        self.mu = 0.0000001*0.5
+        self.lambda_ =0 #0.0001#.0001#0.001
+        #self.mu = 0.0001
+        #self.mu = 0.05 #0.0005 #0.0001
+        self.mu = 0.0001 #0.0005 #0.0001
         self.wrange = [0.5, 1.5]
         self.step = self.sm_time / self.dt
         self.net = net
@@ -117,29 +121,29 @@ class PCA(object):
         assert(train_rate >= 0 and train_rate <=1)
         trainset = set([]);
         ntrain = int(np.floor(train_rate*self.nsample))
+        trainset.update(xrange(ntrain))
         while len(trainset) < ntrain:
             remain = ntrain - len(trainset)
             train_ids = [ int(np.random.randint(0,self.nsample)) for i in xrange(remain) ]
             trainset.update( train_ids)
-            valset = [i for i in xrange(self.nsample) if i not in trainset ] 
+        valset = [i for i in xrange(self.nsample) if i not in trainset ] 
         return self.trainX[list(trainset)], self.trainX[list(valset)]
 
-    def learn(self, ISI):
+    def learn(self, ISI, oper):
         print 'Start learning....'
         PLOT_INTERVAL = 300
         assert(self.net.nlayer % 2 == 0)
         half_nlayer = self.net.nlayer/2
-        self.w = []
         n = self.in_
-        for i in xrange(self.net.nlayer):
-            if i < half_nlayer:
-                m = len(self.net.layers[i])
-                #self.w.append(np.random.rand(n,m) * (wrange[1] - wrange[0]) + wrange[0])
-                #self.w.append(np.array([[ 0.73539622,3.12063883],[ 2.41027625,3.06551378],[ 0.94973508,3.12077812]]))
-                self.w.append(np.array([[ 2.83393203,3.25597963],[ 3.21767484,2.96786741],[ 1.09883002,3.24706597]]))
-                n = m
-            else:
-                self.w.append(np.transpose(self.w[2*half_nlayer - i - 1]))
+        if oper == 'train':
+            self.w = []
+            for i in xrange(self.net.nlayer):
+                if i < half_nlayer:
+                    m = len(self.net.layers[i])
+                    self.w.append(np.random.rand(n,m) * (wrange[1] - wrange[0]) + wrange[0])
+                    n = m
+                else:
+                    self.w.append(np.transpose(self.w[2*half_nlayer - i - 1]))
         p_node = self.in_
         c_node = len(self.net.layers[0]) 
         delta = np.zeros((c_node, p_node))
@@ -153,6 +157,7 @@ class PCA(object):
         #w0 = np.zeros((int(max_iter), p_node* c_node))
         convergence_count = 0
         E_all = np.zeros((int(max_iter),1))
+	best_w = 0
         while it < max_iter and sum_error > eps:
             E_total = 0
             if it == 0:
@@ -171,6 +176,10 @@ class PCA(object):
 #                it = it - 5
 #                continue
             for i in xrange(train_nsample):
+                if train_set[i][1] < train_set[i][0] and train_set[i][2] < train_set[i][0]:
+                    mu = self.mu
+                else:
+                    mu = self.mu
                 w_tmp = np.zeros((c_node, p_node)) 
                 w0[it*train_nsample + i] = self.w[0].flatten()
                 t, thetas, last_thetas, res = self.forward(train_set[i], self.w)
@@ -190,11 +199,12 @@ class PCA(object):
                     phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
                     for j in xrange(p_node):
                         if delta[k][j] < 0 and delta[k][j] > - self.C:
-                            w_tmp[k][j] = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j] - self.lambda_ * phi[k]
-                            #print self.lambda_ * phi[k],-2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j]
+                            w_tmp[k][j] = -2* mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j] - self.lambda_ * phi[k]
+                            if i % PLOT_INTERVAL == 0:
+                                print self.lambda_ * phi[k],-2* mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j]
                         else:
                             count += 1
-                            w_tmp[k][j] = 2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * self.C - self.lambda_ * phi[k]
+                            w_tmp[k][j] = 2* mu* (t[j]*self.dt - train_set[i][j] - ISI) * self.C - self.lambda_ * phi[k]
                 last_w = np.copy(self.w[0])
                 self.w[0] += np.transpose(w_tmp)
                 self.w[self.net.nlayer - 1] += w_tmp
@@ -202,7 +212,8 @@ class PCA(object):
                 sum_error = sum(sum(abs(self.w[0] - last_w)))
                 E_total += E
                 if i % PLOT_INTERVAL == 0:
-                    print train_set[i], t
+                    print 'Y fires:', res*self.dt
+                    print 'Desired firing: ', train_set[i] + ISI, 'actual firing:', t*self.dt
                     print 'sample #%d, Error %f'%(i, E)
                     # plot weight changes
                     w1 = np.transpose(w0)
@@ -212,6 +223,7 @@ class PCA(object):
                         #plt.plot(xrange( (it+1) ), w1[i][:(it+1)])
                     plt.draw()
                     plt.show(block=False)
+                    plt.savefig('pca_weight_%s_%f.png'%(oper, self.mu))
                     plt.pause(0.001)
                     plt.clf()
             print count
@@ -223,13 +235,19 @@ class PCA(object):
             plt.pause(1)
             gt, pred = self.predict(val_set)
             plot_pca(gt, pred)
+            E_total /= train_nsample
             print 'Round #%d, step: %f, Error %f'%(it,self.mu, E_total)        
             print self.w[0]
             E_all[it] = E_total
+	    if E_all[it] < E_all[best_w]:
+		best_w = it
+		pickle_save('model_pca_w_%s_%f.pkl'%(oper, self.mu), w0[(best_w+1)*train_nsample-1])
+
             plt.figure('Error')
             plt.plot(xrange( (it+1) ), E_all[:(it+1)])
             plt.draw()
             plt.show(block=False)
+            plt.savefig('pca_error_%s_%f.png'%(oper, self.mu))
             plt.pause(0.001)
             plt.clf()
             if it != 0 and E_all[it - 1]  < E_total:
@@ -261,6 +279,7 @@ def plot_pca(gt, pd):
     plt.scatter(pd[0], pd[1], c=['r'], alpha=0.5)
     plt.draw()
     plt.show(block=False)
+    plt.savefig('pca_scatter.png')
     plt.pause(0.001)
     plt.clf()
 
@@ -278,25 +297,51 @@ def generate_samples(N):
     t2 = t0+ np.cos(np.pi/3)*samples[1]*0.5 +  np.sin(np.pi/3)* samples[0]
     return np.transpose(np.concatenate( (t0, t1, t2), axis = 0))
 
+def pickle_save(fname, data):
+    with open(fname, 'wb') as output:
+        pickle.dump(data, output, pickle.HIGHEST_PROTOCOL)
+        print "saved to %s"%fname
+
+def pickle_load(fname):
+    with open(fname, 'rb') as _input:
+        return pickle.load(_input)
+
+
 if __name__ == '__main__':
     # construct network
     I_0 = -0.01
     alpha = 0.1
     wrange = [0.5,1.5]
-    N = 500
+    N = 600
     sm_time = 20
     dt = 0.05
     ISI = 5
-    samples = generate_samples(N)
     net = NET(I_0,sm_time, dt)
     net.addlayer(2, alpha*2/3)
     net.addlayer(3, alpha)
-
-    pca = PCA(net, samples)
-    pca.learn(ISI)
-    #w0 =  [[-0.65226165379659284, 2.3892026484443698, 3.2964837590526859], [3.9360338198366169, 0.68320719582864187, -0.20506202274993959]]
-    #pca.w = [ np.transpose(w0), w0]
-    #print pca.w
+    oper = sys.argv[1]
+    if oper == 'retrain':
+        w_model = sys.argv[2]
+        samples = pickle_load('samples.pkl')
+        pca = PCA(net, samples)
+        w = pickle_load(w_model)
+        w = w.reshape(3,2)
+        w = [w, np.transpose(w)]
+        pca.w = w
+        pca.learn(ISI, oper)
+    elif oper == 'train':
+        samples = generate_samples(N)
+        pickle_save('samples.pkl', samples)
+        pca = PCA(net, samples)
+        pca.learn(ISI, oper)
+    else:
+        w_model = sys.argv[2]
+        samples = pickle_load('samples.pkl')
+        pca = PCA(net, samples)
+        w = pickle_load(w_model)
+        w = w.reshape(3,2)
+        w = [w, np.transpose(w)]
+        pca.w = w
     gt, pred = pca.predict(samples)
     plot_pca(gt, pred)
     pdb.set_trace()

@@ -2,7 +2,9 @@ import numpy as np
 import pdb
 import pickle
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import scipy.io as spio
+import sys
 
 class Node(object):
     def __init__(self, I_0, alpha, theta_0, sm_time, dt):
@@ -82,9 +84,9 @@ class SparseCoding(object):
         self.dt = 0.1
         self.sm_time = 20
         self.tao = 0.1
-        self.C = 50
-        self.lambda_ = 0 #0.000000001
-        self.mu = 0.00045 #0.0000001
+        self.C = 1000
+        self.lambda_ = float(sys.argv[2])#0#.0000001 #0.00001 #0.000000001
+        self.mu = float(sys.argv[3]) #0.0000001
         self.wrange = [0, 0.3]
         self.step = self.sm_time / self.dt
         self.net = net
@@ -115,25 +117,25 @@ class SparseCoding(object):
         return t_all, thetas, last_thetas, last_in
 
     def shuffle_data(self, train_rate):
-#        assert(train_rate >= 0 and train_rate <=1)
-#        trainset = set([]);
-#        ntrain = int(np.floor(train_rate*self.nsample))
-#        while len(trainset) < ntrain:
-#            remain = ntrain - len(trainset)
-#            train_ids = [ int(np.random.randint(0,self.nsample)) for i in xrange(remain) ]
-#            trainset.update( train_ids)
+        assert(train_rate >= 0 and train_rate <=1)
+        trainset = set([]);
+        ntrain = int(np.floor(train_rate*self.nsample))
+        while len(trainset) < ntrain:
+            remain = ntrain - len(trainset)
+            train_ids = [ int(np.random.randint(0,self.nsample)) for i in xrange(remain) ]
+            trainset.update( train_ids)
 #            valset = [i for i in xrange(self.nsample) if i not in trainset ] 
-#        return self.trainX[list(trainset)], self.trainX[list(valset)]
 	val_data = generate_fixed_samples()
-	return self.trainX, val_data 
-
-    def learn(self, ISI, w_init):
+        #return self.trainX[list(trainset)], self.trainX[list(valset)]
+        return self.trainX[list(trainset)], val_data[0:1024]
+        
+    def learn(self, ISI, oper):
         print 'Start learning....'
-        PLOT_INTERVAL = 50
+        PLOT_INTERVAL = 1
         assert(self.net.nlayer % 2 == 0)
         half_nlayer = self.net.nlayer/2
         n = self.in_
-	if w_init:
+	if oper == 'train':
 	    self.w = []
 	    for i in xrange(self.net.nlayer):
 		if i < half_nlayer:
@@ -152,7 +154,7 @@ class SparseCoding(object):
         sum_error = 1
         max_iter = 200
         it = 0
-        train_rate = 1
+        train_rate = 0.5
         last_w = np.copy( self.w[0] )
         w0 = np.zeros((int(max_iter*self.nsample*train_rate), p_node* c_node))
         #w0 = np.zeros((int(max_iter), p_node* c_node))
@@ -165,15 +167,7 @@ class SparseCoding(object):
             [train_nsample, _] = np.shape(train_set)
             #w0[it] = self.w[0].flatten()
             count = 0
-	    self.mu = max( 0.0002, self.mu - np.floor(it/2)*0.00005)
-            if convergence_count > 5:
-                print '######################decay###################'
-                self.mu = 0.1*self.mu
-                self.lambda_ = 0.1* self.lambda_
-                convergence_count = 0
-                self.w[0] = w0[(it - 5)*self.nsample*train_rate].reshape((p_node,c_node))
-                it = it - 5
-                continue
+#	    self.mu = max( 0.0002, self.mu - np.floor(it)*0.00005)
             for i in xrange(train_nsample):
                 w_tmp = np.zeros((c_node, p_node)) 
                 w0[it*train_nsample + i] = self.w[0].flatten()
@@ -193,12 +187,12 @@ class SparseCoding(object):
                 for k in xrange(c_node): 
                     phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
                     for j in xrange(p_node):
-                        if delta[k][j] <= 0 and delta[k][j] >= - self.C:
-                            w_tmp[k][j] = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j] - self.lambda_ * phi[k]
-                            #print self.lambda_ * phi[k],-2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * delta[k][j]
-                        else:
-                            count += 1
-                            w_tmp[k][j] = 2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI) * self.C - self.lambda_ * phi[k]
+                        error_correct = self.lambda_*phi[k]
+                        gradient = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)* max(delta[k][j], -self.C) 
+#                        if error_correct > 0.5*gradient:
+#                            w_tmp[k][j] = gradient
+#                        else:
+                        w_tmp[k][j] = gradient - error_correct
                 last_w = np.copy(self.w[0])
                 self.w[0] += np.transpose(w_tmp)
                 self.w[self.net.nlayer - 1] += w_tmp
@@ -236,8 +230,8 @@ class SparseCoding(object):
             E_all[it] = sum(E_total)/train_nsample/256
 	    if E_all[it] < E_all[best_w]:
 		best_w = it
-		pickle_save('model_w.pkl', w0[(best_w+1)*train_nsample-1])
-            plt.figure('Error')
+		pickle_save('sparse_model_w_%s_%f_%f.pkl'%(oper, self.mu, self.lambda_), w0[(best_w+1)*train_nsample-1])
+            plt.figure('Error_%f_%f'%(self.mu, self.lambda_))
             plt.plot(xrange( (it+1) ), E_all[:(it+1)])
             plt.draw()
             plt.show(block=False)
@@ -258,7 +252,11 @@ class SparseCoding(object):
 	    print 'Predicting image patch %d'%i
             t, deltas, last_thetas, res = self.forward(samples[i], self.w)
 	    #pred.append(t*self.dt-9)
-	    pred.append((t - np.amin(t))/(np.amax(t) - np.amin(t)))
+            t_fire = (t - np.mean(t))*self.dt
+            t_fire_std =  np.std(t_fire)
+            t_fire /= t_fire_std
+            t_fire -= np.amin(t_fire)
+	    pred.append(t_fire)
 	    print 'Firing time: ', self.dt*t[0:5]
 	    print 'origin image:', samples[i, 0:5]
 	    print 'predicted image:', pred[i][0:5]
@@ -269,13 +267,11 @@ def plot_single_patch(gt, pd):
     patch_size = np.sqrt(dim)
     print 'Ploting...'
     plt.figure('image')
-    for i in xrange(4):
-	plt.subplot(121)
-	plt.imshow(gt[i].reshape(patch_size, patch_size), cmap='gray')
-	plt.hold(True)
-	plt.subplot(122)
-	plt.imshow(pd[i].reshape(patch_size, patch_size),cmap='gray')
-	plt.hold(True)
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
+    ax1.imshow(gt[0].reshape(patch_size, patch_size), cmap='gray')
+    ax2.imshow(pd[0].reshape(patch_size, patch_size),cmap='gray')
+    ax3.imshow(gt[1].reshape(patch_size, patch_size), cmap='gray')
+    ax4.imshow(pd[1].reshape(patch_size, patch_size),cmap='gray')
     plt.draw()
     plt.show(block=False)
     plt.pause(0.001)
@@ -335,14 +331,15 @@ def generate_fixed_samples():
     patch_size = 16
     (width, height, pnum) = np.shape(samples)
     patches = []
-    for i in xrange(pnum):
+    for i in xrange(1):
 	for j in xrange( width / patch_size ):
 	    for k in xrange( height / patch_size):
 		patch = samples[j*patch_size: (j+1)*patch_size,k*patch_size:(k+1)*patch_size,i]
         # normalize path
-		max_pixel = np.amax(patch)
-		min_pixel = np.amin(patch)
-		patch = (patch - min_pixel)*1.0/(max_pixel - min_pixel)
+		mean_patch = np.mean(patch)
+                std_patch = np.std(patch)
+		patch = (patch - mean_patch)/std_patch
+                patch -= np.amin(patch)
 		patch = patch.flatten()
 		patches.append(patch)
     return np.array(patches)
@@ -408,22 +405,40 @@ if __name__ == '__main__':
     sm_time = 20
     dt = 0.1
     ISI = 9
-    samples = generate_random_samples(N)
+    #samples = generate_random_samples(N)
+    samples = generate_fixed_samples()
+    samples = samples[:1024]
     net = NET(I_0,sm_time, dt)
     net.addlayer(64, alpha*2/3)
     net.addlayer(256, alpha)
-    pca = SparseCoding(net, samples)
-    w = pickle_load('model_w.pkl')
-    w = w.reshape(256,64)
-    w = [w, np.transpose(w)]
-    pca.w = w
-    pca.learn(ISI, False)
-    #w0 =  [[-0.65226165379659284, 2.3892026484443698, 3.2964837590526859], [3.9360338198366169, 0.68320719582864187, -0.20506202274993959]]
-    #pca.w = [ np.transpose(w0), w0]
-    #print pca.w
-    #pickle_save('model.pkl', pca)
-    pdb.set_trace()
-    test_samples = generate_fixed_samples()
+    oper = sys.argv[1]
+    w_model = 'sparse_model_w.pkl'
+    sample_name = 'sparse_samples.pkl'
+    if oper == 'retrain':
+        w_model = sys.argv[4]
+        samples = pickle_load(sample_name)
+        w = pickle_load(w_model)
+        w = w.reshape(256,64)
+        w = [w, np.transpose(w)]
+        pca = SparseCoding(net, samples)
+        pca.w = w
+        pca.learn(ISI, oper)
+    elif oper == 'train':
+        samples = generate_fixed_samples()
+        print np.shape(samples)
+        pickle_save(sample_name, samples)
+        pca = SparseCoding(net, samples)
+        pca.learn(ISI, oper)
+    else:
+        w_model = sys.argv[4]
+        samples = pickle_load(sample_name)
+        pca = SparseCoding(net, samples)
+        w = pickle_load(w_model)
+        w = w.reshape(256,64)
+        w = [w, np.transpose(w)]
+        pca.w = w
+ 
+    test_samples = samples #generate_fixed_samples()
     gt, pred = pca.predict(test_samples[:1024])
     pickle_save('gt.pkl', gt)
     pickle_save('pred.pkl', pred)
