@@ -398,12 +398,14 @@ if __name__ == '__main__':
     sm_time = 20
     dt = 0.1
     ISI = 9
+    m = 64
+    n = 256
     #samples = generate_random_samples(N)
     samples = generate_fixed_samples()
     samples = samples[:1024]
     net = NET(I_0,sm_time, dt)
-    net.addlayer(64, alpha*2/3)
-    net.addlayer(256, alpha)
+    net.addlayer(m, alpha*m/n)
+    net.addlayer(n, alpha)
     oper = sys.argv[1]
     w_model = 'sparse_model_w.pkl'
     sample_name = 'sparse_samples.pkl'
