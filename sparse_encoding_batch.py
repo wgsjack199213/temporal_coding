@@ -84,7 +84,7 @@ class SparseCoding(object):
         self.dt = 0.1
         self.sm_time = 20
         self.tao = 0.1
-        self.C = 50
+        self.C = 50 
         self.lambda_ = float(sys.argv[2])#0#.0000001 #0.00001 #0.000000001
         self.mu = float(sys.argv[3]) #0.0000001
         self.wrange = [0, 0.3]
@@ -131,7 +131,7 @@ class SparseCoding(object):
         
     def learn(self, ISI, oper):
         print 'Start learning....'
-        PLOT_INTERVAL = 1
+        PLOT_INTERVAL = 128
         assert(self.net.nlayer % 2 == 0)
         half_nlayer = self.net.nlayer/2
         n = self.in_
@@ -168,8 +168,9 @@ class SparseCoding(object):
             #w0[it] = self.w[0].flatten()
             count = 0
 #	    self.mu = max( 0.0002, self.mu - np.floor(it)*0.00005)
+            batch = 128
+            w_tmp = np.zeros((c_node, p_node)) 
             for i in xrange(train_nsample):
-                w_tmp = np.zeros((c_node, p_node)) 
                 w0[it*train_nsample + i] = self.w[0].flatten()
                 t, thetas, last_thetas, res = self.forward(train_set[i], self.w)
                 # update last layer of weight
@@ -192,12 +193,13 @@ class SparseCoding(object):
 #                        if error_correct > 0.5*gradient:
 #                            w_tmp[k][j] = gradient
 #                        else:
-                        w_tmp[k][j] = gradient - error_correct
-                last_w = np.copy(self.w[0])
-                self.w[0] += np.transpose(w_tmp)
-                self.w[self.net.nlayer - 1] += w_tmp
+                        w_tmp[k][j] += gradient - error_correct
+                if i != 0 and i % batch == 0:
+                    last_w = np.copy(self.w[0])
+                    self.w[0] += np.transpose(w_tmp)/batch
+                    self.w[self.net.nlayer - 1] += w_tmp/batch
+                    sum_error = sum(sum(abs(self.w[0] - last_w)))
                 E= abs(t* self.dt - train_set[i]  - np.ones(self.in_)*ISI)
-                sum_error = sum(sum(abs(self.w[0] - last_w)))
                 E_total += E
                 if i % PLOT_INTERVAL == 0:
 		    print 'Layer Y fires: ', res[0:64]*self.dt
@@ -215,7 +217,6 @@ class SparseCoding(object):
                     plt.show(block=False)
                     plt.pause(0.001)
                     plt.clf()
-            print 'Out of range %s times'%count
             # plot theta changes
             plt.figure('Theta')
             plt.plot(thetas[0])
@@ -304,20 +305,25 @@ def pickle_save(fname, data):
 def pickle_load(fname):
     with open(fname, 'rb') as _input:
         return pickle.load(_input)
-#
-#def generate_random_samples(N):
-#    samples = loadmat('IMAGES_RAW.mat')['IMAGESr']
-#    patch_size = 16
-#    (width, height, pnum) = np.shape(samples)
-#    patches = []
-#    for i in xrange(N):
-#        iid = int(np.floor(np.random.rand(1)*pnum))
-#        corner = np.floor( np.multiply(np.random.rand(2), np.array([ width - patch_size, height - patch_size ]))) 
-#	corner = [int(corner[i]) for i in xrange(len(corner))]
-#        patch = samples[corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,iid]
-#        # normalize path
-#        patches.append(patch)
-#    return np.array(patches)
+
+def generate_random_samples(N):
+    samples = loadmat('IMAGES_RAW.mat')['IMAGESr']
+    patch_size = 16
+    (width, height, pnum) = np.shape(samples)
+    patches = []
+    for i in xrange(N):
+        iid = int(np.floor(np.random.rand(1)*pnum))
+        corner = np.floor( np.multiply(np.random.rand(2), np.array([ width - patch_size, height - patch_size ]))) 
+	corner = [int(corner[i]) for i in xrange(len(corner))]
+        patch = samples[corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,iid]
+        # normalize path
+        max_pixel = np.amax(patch)
+        min_pixel = np.amin(patch)
+        patch = (patch - min_pixel)*1.0/(max_pixel - min_pixel)
+	patch = patch.flatten()
+        patches.append(patch)
+    return np.array(patches)
+
 def generate_fixed_samples():
     samples = loadmat('IMAGES_RAW.mat')['IMAGESr']
     patch_size = 16
@@ -337,6 +343,7 @@ def generate_fixed_samples():
     min_p = np.amin(patches)
     patches -= min_p
     return patches 
+
 
 def loadmat(filename):
     '''
