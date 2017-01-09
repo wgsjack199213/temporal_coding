@@ -4,10 +4,10 @@
 The auto-encoder network model is extremely sensitive to the parameters.
 This sensitivity makes the model very hard to tune and to train when the number of the parameters grows.
 The author gave the heuristic choices of the parameters for his experiments in the paper, 
-but he did not giving any insight about how to choose them. 
+but he did not give any insight about how to choose them. 
 The model won't work (converge during training) unless the parameters such as 
 $\alpha$, $\lambda$ and $I_0$ are carefully chosen.
-Moreover, he author did not either mention how he calculate the delta dirac function 
+Moreover, the author did not either mention how he calculated the delta dirac function 
 (we don't know the value of $A$ in Equation~\ref{dirac} i.e. the amplitude of the input
 dirac current. We try some values but only a few work).
 Practically, we find that the given parameters partially works in the 2-D gaussian distribution experiment, 
@@ -23,6 +23,6 @@ Also, it made certain assumptions about the gradient derivation, which makes tra
 
 Some subsequent research such as~\cite{mckennoch2009spike} partially solved the problems mentioned above,
 designed more advanced learning rule, 
-and generalize the theta neuron network to solve more sophisticated machine learning tasks such as regression and classification.
+and generalized the theta neuron network to solve more sophisticated machine learning tasks such as regression and classification.
 Despite that the problem of parameter sensitivity still existed as the authors spent a whole page 
 discussing parameter sensitivity, the work still showed the great potential of temporal-coding and time-based computation.

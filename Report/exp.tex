@@ -1,4 +1,5 @@
 \section{Auto-encoder Network Evaluation}
+\label{exp}
 
 In this section, we firstly briefly review the auto-encoder network model constructed with theta neurons
 proposed in the paper, and then describe how we reproduce the results of the experiments conducted by the author.
@@ -31,7 +32,7 @@ The author proposed in the paper that if the spike times are within the linear p
 then the auto-encoder network performs Principle Component Analysis (PCA) in the time domain.
 And in the experiment section of the paper, the author showed how to train an auto-encoder network to compute PCA
 of a two dimensional Gaussian distribution.
-We successfully reproduce the experiment results shown in the paper. 
+We redid all the experiments mentioned in the paper. 
 In the following subsection, 
 we describe our experiment results, and focus on comparing the results obtained by us and the author.
 
@@ -65,7 +66,7 @@ and the MSE decreases to a lower level.
 However, the weight matrix is still local optimal, 
 as we can see in Figure~\ref{local_better} the reconstruction error of points
 satisfying $t_1 < t_0$ and $t_2 < t_0$ (``negative samples'') is relatively large. 
-In other words, the auto-encoder network successfully learn one direction of the principle component but fails
+In other words, the auto-encoder network successfully learns one direction of the principle component but fails
 to learn the other one. To solve the problem, we dynamically set a higher learning rate $\eta$ when
 the model is fed with samples where $t_1 < t_0$ and $t_2 < t_0$ and a lower learning rate otherwise,
 which is equivalent to resampling the negative samples.
