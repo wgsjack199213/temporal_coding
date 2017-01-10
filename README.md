@@ -3,17 +3,17 @@
 
 ##### Implementation Structure
 The implementation is organized in 3 classes
-1. Node: Model of theta neuron
-        theta_der: theta incremental
-        model: simulation of neuron model
-2. Net: Construct auto-encode network
-        add_layer: construct network architecture layer by layer
-        stimulate: simulation by layer level, with input from previous layer
-3. SparseCoding/PCA: implemention of application
-        delta_t_delta_w: compute partial derivative
-        forward: forward propagation
-        shuffle_data: divide dataset to training set and validation set
-        learn: network learning   
+- Node: Model of theta neuron
+  * theta_der: theta incremental
+  * model: simulation of neuron model
+- Net: Construct auto-encode network
+  * add_layer: construct network architecture layer by layer
+  * stimulate: simulation by layer level, with input from previous layer
+- SparseCoding/PCA: implemention of application
+  * delta_t_delta_w: compute partial derivative
+  * forward: forward propagation
+  * shuffle_data: divide dataset to training set and validation set
+  * learn: network learning   
 
 ##### How to Run the code:
 
