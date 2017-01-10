@@ -120,4 +120,13 @@ the total MSE further decreases, and the principle components are well reconstru
 \end{figure*}
 
 \subsection{Encoding Natural Images}
+Similarly, we continue working on the natural image encoding experiment mentioned in the paper. We use the same image dataset as the authors, which contains 10 gray images of size $512 \times 512$. We are supposed to randomly draw $16 \times 16$ patches from the gray images as our network input, normalizing all samples to have standard variation of 1. The encoder network has architecture of $256\times 64 \times 256$, which means, the number of weight parameters to be trained in this network is over 10,000. Usually, we need larger number of samples than weights to train a network model, however, with constraints of computation capacity, we only pick one $512 \times 512$ image, divide it to 1024 patches as the training data. To verify the correctness of the model, we reconstruct the same image with trained weights, to see whether a sparse represented image could be showed.
+
+
+
+
+
+
+
+
 

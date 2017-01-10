@@ -10,19 +10,18 @@ In Equation (6) of page 3 of the paper, the potential after the synaptic current
 \end{equation}
 Firstly, we think it should be 
 \begin{equation}
-	\theta_j^+ = \theta(t_j^+) = \theta_j^- + (1-\cos \theta_j^-) + \alpha w_j (1+\cos \theta_j^-)
+	\theta_j^+ = \theta(t_j^+) = \theta_j^- + (1-\cos \theta_j^-) + \alpha (I_0 + w_j) (1+\cos \theta_j^-)
 \end{equation}
-We see no reason why the term $ 1-\cos \theta_j^-$ is removed.
-Secondly, this equation is very misleading because it does not explicitly show the length of timestep $dt$,
-or it just takes $1.0$ for the timestep.
+There is a bias term $ 1-\cos \theta_j^- +  \alpha I_0 (1+\cos \theta_j^-)$ removed. Initially, $\theta$ is set to $\theta_0^+$, in which case the bias term equals zero. However, when time goes on, more input Dirac current comes in, resulting in the bias term no longer ignorable. Though this error is got rid of by calculating derivative of $\theta$,  we still would like to correct it here.
+
 Precisely, we should use the following formula to update $\theta$:
-\begin{align}
-	\theta_j^+ &= \theta(t_j^+) \\
-	&= \theta_j^- + d\theta \\
-	&= \theta_j^- + \frac{d\theta}{dt} dt\\
-	&= \theta_j^- + ((1-\cos \theta_j^-) + \alpha w_j (1+\cos \theta_j^-))dt
-\end{align}
-where $dt$ is not necessarily $1.0$, which is very import for the implementation.
+\begin{eqnarray}
+	\theta_j^+ &=& \theta(t_j^+) \\
+	&=& \theta_j^- + d\theta \\
+	&=& \theta_j^- + \frac{d\theta}{dt} dt\\
+	&=& \theta_j^- + ((1-\cos \theta_j^-) +  \alpha I_0 (1+\cos \theta_j^-)\\
+	 &&+ \alpha w_j (1+\cos \theta_j^-))dt
+\end{eqnarray}
 
 
 \paragraph{Error 2.} 

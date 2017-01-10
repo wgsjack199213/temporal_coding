@@ -46,21 +46,7 @@ where $i \in 1..N$ indexes the synapses:
 Synaptic currents are modeled as Diracs: $I_i(t) = w_i\delta(t - t_i)$,
 where $t_i$ is the firing time of presynaptic neuron $i$ and $w_i$ the weight of the synapse.
 
-One tricky problem is the calculation of the Dirac delta function $\delta$. 
-The author did not mention in the paper how he compute the $\delta(t-t_i)$.
-By definition we know % \equation{}
-\begin{equation}
-\label{dirac}
-\delta(t-t_i) = \left\{ \begin{array}{ll}
- A & \textrm{if $t = t_i$}\\
- 0 & \textrm{otherwise}
-  \end{array} \right.
-\end{equation}
-but we don't know the choice of $A$.
-We were too young too simple and took $1.0$ for $A$, which resulted in mismatch between
-the experiment results obtained by us and the author. 
-After long time of debugging we find that a larger $A$ is necessary for reproducing the experiment result shown in
-the paper.
+One tricky problem is that when the initial weights are small, the neurons will never fire in the simulation duration as the author set. We manually enlarge amplitude of synaptic current by a factor $A$ to ensure neurons fire in time. To be clear, we change the incremental term to $I_i(t) = Aw_i\delta(t - t_i)$.
 
 \subsection{Response Property Analysis of the Theta Model}
 
