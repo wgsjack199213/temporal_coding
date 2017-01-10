@@ -131,7 +131,7 @@ class SparseCoding(object):
         
     def learn(self, ISI, oper):
         print 'Start learning....'
-        PLOT_INTERVAL = 1
+        PLOT_INTERVAL = 100
         assert(self.net.nlayer % 2 == 0)
         half_nlayer = self.net.nlayer/2
         n = self.in_
@@ -188,7 +188,7 @@ class SparseCoding(object):
                     phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
                     for j in xrange(p_node):
                         error_correct = self.lambda_*phi[k]
-                        if delta[k][j] > -self.C and delta[k][j] < 0:
+                        if delta[k][j] > -self.C and delta[k][j] <= 0:
                             gradient = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)*delta[k][j]
                         else:
                             gradient = 2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)*self.C
@@ -199,7 +199,7 @@ class SparseCoding(object):
                 last_w = np.copy(self.w[0])
                 self.w[0] += np.transpose(w_tmp)
                 self.w[self.net.nlayer - 1] += w_tmp
-                E= abs(t* self.dt - train_set[i]  - np.ones(self.in_)*ISI)
+                E= (t* self.dt - train_set[i]  - np.ones(self.in_)*ISI)**2
                 sum_error = sum(sum(abs(self.w[0] - last_w)))
                 E_total += E
                 if i % PLOT_INTERVAL == 0:
@@ -214,11 +214,13 @@ class SparseCoding(object):
 			if k % 128 == 0:
 			    plt.plot(xrange( (it)*train_nsample + i ), w1[k][:(it)*train_nsample+i])
                         #plt.plot(xrange( (it+1) ), w1[i][:(it+1)])
+                    plt.xlabel('Number of Iterations')
+                    plt.ylabel('Values of ws')
                     plt.draw()
                     plt.show(block=False)
+                    plt.savefig('sparse_weight_%s_%f_%f.png'%(oper, self.mu, self.lambda_))
                     plt.pause(0.001)
                     plt.clf()
-            print 'Out of range %s times'%count
             # plot theta changes
             plt.figure('Theta')
             plt.plot(thetas[0])
@@ -236,8 +238,11 @@ class SparseCoding(object):
 		pickle_save('sparse_model_w_%s_%f_%f.pkl'%(oper, self.mu, self.lambda_), w0[(best_w+1)*train_nsample-1])
             plt.figure('Error_%f_%f'%(self.mu, self.lambda_))
             plt.plot(xrange( (it+1) ), E_all[:(it+1)])
+            plt.xlabel('Number of Batches')
+            plt.ylabel('MSE')
             plt.draw()
             plt.show(block=False)
+            plt.savefig('sparse_error_%s_%f_%f.png'%(oper, self.mu, self.lambda_))
             plt.pause(0.001)
             plt.clf()
             if it != 0 and sum(E_all[it - 1])  < sum(E_total):
@@ -255,7 +260,7 @@ class SparseCoding(object):
 	    print 'Predicting image patch %d'%i
             t, deltas, last_thetas, res = self.forward(samples[i], self.w)
 	    #pred.append(t*self.dt-9)
-            t_fire = t *self.dt
+            t_fire = t *self.dt - 7
 	    pred.append(t_fire)
 	    print 'Firing time: ', self.dt*t[0:5]
 	    print 'origin image:', samples[i, 0:5]
@@ -420,7 +425,7 @@ if __name__ == '__main__':
     N = 300
     sm_time = 20
     dt = 0.1
-    ISI = 7
+    ISI = 9
     m = 64
     n = 256
     #samples = generate_random_samples(N)
@@ -434,7 +439,7 @@ if __name__ == '__main__':
         w_model = sys.argv[4]
         samples = pickle_load(sample_name)
         w = pickle_load(w_model)
-        w = w.reshape(256,64)
+        w = w.reshape(n,m)
         w = [w, np.transpose(w)]
         pca = SparseCoding(net, samples)
         pca.w = w
@@ -451,7 +456,7 @@ if __name__ == '__main__':
         samples = pickle_load(sample_name)
         pca = SparseCoding(net, samples)
         w = pickle_load(w_model)
-        w = w.reshape(256,64)
+        w = w.reshape(n,m)
         w = [w, np.transpose(w)]
         pca.w = w
  
