@@ -122,11 +122,7 @@ the total MSE further decreases, and the principle components are well reconstru
 \subsection{Encoding Natural Images}
 Similarly, we continue working on the natural image encoding experiment mentioned in the paper. We use the same image dataset as the authors, which contains 10 gray images of size $512 \times 512$. We are supposed to randomly draw $16 \times 16$ patches from the gray images as our network input, normalizing all samples to have standard variation of 1. The encoder network has architecture of $256\times 64 \times 256$, which means, the number of weight parameters to be trained in this network is over 10,000. Usually, we need larger number of samples than weights to train a network model, however, with constraints of computation capacity, we only pick one $512 \times 512$ image, divide it to 1024 patches as the training data. To verify the correctness of the model, we reconstruct the same image with trained weights, to see whether a sparse represented image could be showed.
 
+Unfortunately, we found tuning of parameters in this experiment is even harder than PCA. We adopts all parameters mentioned in paper, and adjusts amplitude gain of Dirac current to be a reasonable value. Normalized to have standard variation of 1, the input value ranges from 0 to 4.8, which is a large range comparing to PCA case. The actual firing time can hardly fit to the desired firing time, with weights updated every step by various samples.
 
-
-
-
-
-
-
+We have tried different scales of learning rate $\eta$, as well as other parameters such like $C$, and $\lambda$. None of our trail results in a consistent convergence of MSE. We are quite doubt on how the authors tuned their parameter in such a non-convex problem, and how they avoid being trapped into local minima.
 
