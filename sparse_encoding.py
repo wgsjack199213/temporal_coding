@@ -33,7 +33,7 @@ class Node(object):
             if t in t_input_dirac:    # The first time cross the t_input_dirac
                 id_ = np.where(t_input_dirac == t)[0][0]
                 if id_ != len(t_input_dirac):
-                    self.I += 1/self.dt*w[id_]  # Synaptic currents as Diracs
+                    self.I += 20*w[id_]  # Synaptic currents as Diracs
             delta_theta = self.theta_der(self.theta, self.alpha, self.I)
             theta_new = self.theta + delta_theta
             #print theta_new
@@ -188,7 +188,10 @@ class SparseCoding(object):
                     phi[k] = phi[k]* self.tao + (1-self.tao)*(res[k] - np.mean(res))*self.dt
                     for j in xrange(p_node):
                         error_correct = self.lambda_*phi[k]
-                        gradient = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)* max(delta[k][j], -self.C) 
+                        if delta[k][j] > -self.C and delta[k][j] < 0:
+                            gradient = -2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)*delta[k][j]
+                        else:
+                            gradient = 2* self.mu* (t[j]*self.dt - train_set[i][j] - ISI)*self.C
 #                        if error_correct > 0.5*gradient:
 #                            w_tmp[k][j] = gradient
 #                        else:
@@ -336,7 +339,27 @@ def generate_fixed_samples():
     patches = (patches - mean_patches) / std_patches
     min_p = np.amin(patches)
     patches -= min_p
+    print np.amax(patches)
     return patches 
+def generate_fixed_samples_bounded():
+    print 'Bounded input'
+    samples = loadmat('IMAGES_RAW.mat')['IMAGESr']
+    patch_size = 16
+    (width, height, pnum) = np.shape(samples)
+    patches = []
+    for i in xrange(1):
+	for j in xrange( width / patch_size ):
+	    for k in xrange( height / patch_size):
+		patch = samples[j*patch_size: (j+1)*patch_size,k*patch_size:(k+1)*patch_size,i]
+		patch = patch.flatten()
+		patches.append(patch)
+    # normalize patch
+    patch = np.array(patches)
+    min_patches = np.amin(patches)
+    max_patches = np.amax(patches)
+    patches = (patches - min_patches) /(max_patches -  min_patches)
+    return patches 
+
 
 def loadmat(filename):
     '''
@@ -397,12 +420,10 @@ if __name__ == '__main__':
     N = 300
     sm_time = 20
     dt = 0.1
-    ISI = 9
+    ISI = 7
     m = 64
     n = 256
     #samples = generate_random_samples(N)
-    samples = generate_fixed_samples()
-    samples = samples[:1024]
     net = NET(I_0,sm_time, dt)
     net.addlayer(m, alpha*m/n)
     net.addlayer(n, alpha)
@@ -420,6 +441,7 @@ if __name__ == '__main__':
         pca.learn(ISI, oper)
     elif oper == 'train':
         samples = generate_fixed_samples()
+        #samples = generate_fixed_samples_bounded()
         print np.shape(samples)
         pickle_save(sample_name, samples)
         pca = SparseCoding(net, samples)
