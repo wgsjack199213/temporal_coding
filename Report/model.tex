@@ -5,6 +5,7 @@ In this section we briefly describe the model introduced in the paper~\cite{voe2
 and focus on more detailed analysis and explanations of the model.
 
 \subsection{The Theta Neuron}
+\label{theta_neuron}
 
 
 \begin{equation}
@@ -46,7 +47,7 @@ where $i \in 1..N$ indexes the synapses:
 Synaptic currents are modeled as Diracs: $I_i(t) = w_i\delta(t - t_i)$,
 where $t_i$ is the firing time of presynaptic neuron $i$ and $w_i$ the weight of the synapse.
 
-One tricky problem is that when the initial weights are small, the neurons will never fire in the simulation duration as the author set. We manually enlarge amplitude of synaptic current by a factor $A$ to ensure neurons fire in time. To be clear, we change the incremental term to $I_i(t) = Aw_i\delta(t - t_i)$.
+One tricky problem is that when the initial weights are small, the neurons will never fire in the simulation duration as the author set. We manually enlarge the amplitude of synaptic current by a factor $A$ to ensure neurons fire in time. To be clear, we change the incremental term to $I_i(t) = Aw_i\delta(t - t_i)$.
 
 \subsection{Response Property Analysis of the Theta Model}
 
@@ -97,7 +98,7 @@ When $t$ is sufficiently large (larger than the firing cycle), the theta neuron 
 of the input Dirac current, and thus the firing time is not affected by $t$ anymore.
 
 When $I_0 < 0$, things are more interesting. When $w > 0$, the $\Delta t_f$ is monotone decreasing
-with $t$, indicating that the input Dirac current has larger impact when it comes earlier.
+with $t$, indicating that the input Dirac current has a larger impact when it comes earlier.
 When $t$ is sufficiently large and the theta neuron fires first, 
 $\Delta t_f$ becomes $0$ for the same reason described above.
 However, when $w < 0$ and $t$ is small enough, the theta neuron no longer fires. This is because
@@ -113,7 +114,7 @@ From Figure~\ref{theta_t}(a) we can see that the theta neuron always fires no ma
 of $w$ is. Positive $w$ makes the theta neuron fires earlier, and vice versa. 
 From Figure~\ref{theta_t}(b) we can see that the theta neuron fires when $w=0.6329$, while it never
 fires when $w \leq 0.6328$, which means the behavior of the neuron could be very sensitive to the value of
-the synapse weight $w$ under certain circumstances.
+the synapse's weight $w$ under certain circumstances.
 
 
 \subsection{Learning Rule}
@@ -123,8 +124,8 @@ We do not repeat the derivation process in this report but highlight some key id
 
 Our objective is to learn a set of target firing times $\bar t_s$. That is, we train a set of theta neurons
 to fire at the time we would like them to fire. The loss function (cost function) is the mean square error,
-denoted by $E = \langle t_s - \bar {t}_s$, where $t_s$ are the actual spike times.
-The original work use gradient descent method to optimize $E$, so the derivation of the learning rule
+denoted by $E = \langle t_s - \bar {t}_s\rangle$, where $t_s$s are the actual spike times.
+The original work uses gradient descent method to optimize $E$, so the derivation of the learning rule
 is just computations of partial derivatives.
 
 The firing time $t_s$ is not directly a function of $w_i$, so the author defined a function $F$ 

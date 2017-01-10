@@ -3,33 +3,7 @@ documents/
 *.swp
 *.txt
 
-centering.png
-pca.png
-positive_train_1.png
+*.png
+!Report/*.png
 poster/
-result.png
-theta_t_negtive_I.png
-theta_t_positive_I.png
-train_150000.png
-weight.png
-x1.png
-x2.png
-x3_mirror_lower.png
 
-
-global_mse.png
-global_mse_2.png
-global_weight_evolution.png
-global_weight_evolution_2.png
-local_better_mse.png
-local_better_t.png
-local_better_weight_evolution.png
-local_min_mse.png
-local_min_t.png
-local_min_weight_evolution.png
-local_stable_t.png
-local_stable_weight_evolution.png
-longer_better_t.png
-longer_better_t_2.png
-longer_t.png
-same_value.png

@@ -4,25 +4,24 @@
 The auto-encoder network model is extremely sensitive to the parameters.
 This sensitivity makes the model very hard to tune and to train when the number of the parameters grows.
 The author gave the heuristic choices of the parameters for his experiments in the paper, 
-but he did not give any insight about how to choose them. 
+but he did not provide any insight about how to choose them. 
 The model won't work (converge during training) unless the parameters such as 
 $\alpha$, $\lambda$ and $I_0$ are carefully chosen.
-Moreover, the author did not either mention how he calculated the delta dirac function 
-(we don't know the value of $A$ in Equation~\ref{dirac} i.e. the amplitude of the input
-dirac current. We try some values but only a few work).
-Practically, we find that the given parameters partially works in the 2-D gaussian distribution experiment, 
+Moreover, the author did not either mention how he calculated the delta Dirac function 
+(we don't know the value of $A$ described in Section~\ref{theta_neuron}. We try some values but only a few work).
+Practically, we find that the given parameters partially works in the 2-D Gaussian distribution experiment, 
 while they do not work in the natural image experiment,
 as the training process is either unstable or trapped into a local minimum. 
 Therefore we don't believe the method and the auto-encoder network architecture is practical and generalize well
-as long as it is sensitive to the parameters, which have to be heuristically chosen by human.
+as long as it is sensitive to the parameters, which have to be heuristically chosen by the human.
 
 Another limitation of the proposed auto-encoder model is that it only works with specific cases
 (using theta neurons to compute PCA).
 The method only works with a single-layer of neurons, and cannot approximate complex functions.
-Also, it made certain assumptions about the gradient derivation, which makes training unpractical in some other cases.
+Also, it made certain assumptions during the gradient derivation, which makes training unpractical in some other cases.
 
 Some subsequent research such as~\cite{mckennoch2009spike} partially solved the problems mentioned above,
 designed more advanced learning rule, 
 and generalized the theta neuron network to solve more sophisticated machine learning tasks such as regression and classification.
 Despite that the problem of parameter sensitivity still existed as the authors spent a whole page 
-discussing parameter sensitivity, the work still showed the great potential of temporal-coding and time-based computation.
+discussing parameter sensitivity, the work still showed the great potential of temporal coding and time-based computation using spike neurons.
